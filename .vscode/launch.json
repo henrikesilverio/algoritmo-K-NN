@@ -5,7 +5,7 @@
         "type": "cppdbg",
         "request": "launch",
         "program": "${workspaceFolder}/trabalho.exe",
-        "args": ["-t", "bases/test_59.data", "-n", "bases/train_59.data", "-p", "2"],
+        "args": ["-t", "bases/test_59.data", "-n", "bases/train_59.data", "-p", "1", "-a", "1"],
         "stopAtEntry": false,
         "cwd": "${workspaceFolder}",
         "environment": [],

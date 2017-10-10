@@ -83,14 +83,30 @@ float DistanciaManhattan(float *treino, float *teste)
     return somatoria;
 }
 
-DWORD WINAPI FuncaoThread(void *data)
+DWORD WINAPI FuncaoThreadDistanciaManhattan(void *data)
 {
     int id = (int)data, i;
     float resultado = 0;
     for (i = id; i < numeroDeLinhasDeTreino; i += numeroDeThreads)
     {
         resultado = DistanciaManhattan(matrizTreino.data[i], matrizTeste.data[indiceMatrizTeste]);
-        if (resultado < menoresResultados[id]) {
+        if (resultado < menoresResultados[id])
+        {
+            menoresResultados[id] = resultado;
+        }
+    }
+    return 0;
+}
+
+DWORD WINAPI FuncaoThreadDistanciaEuclidiana(void *data)
+{
+    int id = (int)data, i;
+    float resultado = 0;
+    for (i = id; i < numeroDeLinhasDeTreino; i += numeroDeThreads)
+    {
+        resultado = DistanciaEuclidiana(matrizTreino.data[i], matrizTeste.data[indiceMatrizTeste]);
+        if (resultado < menoresResultados[id])
+        {
             menoresResultados[id] = resultado;
         }
     }
@@ -99,7 +115,7 @@ DWORD WINAPI FuncaoThread(void *data)
 
 int main(int argc, char **argv)
 {
-    clock_t begin = clock();
+    //clock_t begin = clock();
 
     int opcao;
     extern char *optarg;
@@ -113,7 +129,7 @@ int main(int argc, char **argv)
     matrizTeste.data = (float **)malloc(3000 * sizeof(float *));
     matrizTreino.data = (float **)malloc(10000 * sizeof(float *));
 
-    while ((opcao = getopt(argc, argv, "ht:n:p:")) != -1)
+    while ((opcao = getopt(argc, argv, "ht:n:p:a:")) != -1)
     {
         switch (opcao)
         {
@@ -162,28 +178,45 @@ int main(int argc, char **argv)
             numeroDeThreads = atoi(optarg);
             menoresResultados = (float *)malloc(numeroDeThreads * sizeof(float));
             break;
+        case 'a':
+            algoritmo = atoi(optarg);
+            break;
         default:
             return (0);
         }
     }
 
     printf("Numero de threads: %d\n", numeroDeThreads);
-    int i;
-    HANDLE vetorDeThread[numeroDeThreads];
-    for (i = 0; i < numeroDeThreads; i++)
+    int i, j;
+    for (j = 0; j < numeroDeLinhasDeTeste; j++)
     {
-        menoresResultados[i] = 0;
-        vetorDeThread[i] = CreateThread(NULL, 0, FuncaoThread, (void *)i, 0, NULL);
+        HANDLE vetorDeThread[numeroDeThreads];
+        for (i = 0; i < numeroDeThreads; i++)
+        {
+            menoresResultados[i] = 0;
+            if (algoritmo == 1)
+            {
+                vetorDeThread[i] = CreateThread(NULL, 0, FuncaoThreadDistanciaEuclidiana, (void *)i, 0, NULL);
+            }
+            else
+            {
+                vetorDeThread[i] = CreateThread(NULL, 0, FuncaoThreadDistanciaManhattan, (void *)i, 0, NULL);
+            }
+        }
+
+        WaitForMultipleObjects(numeroDeThreads, vetorDeThread, TRUE, INFINITE);
+    
+        for (i = 0; i < numeroDeThreads; i++)
+        {
+            CloseHandle(vetorDeThread[i]);
+        }
+        indiceMatrizTeste++;
     }
 
-    for (i = 0; i < numeroDeThreads; i++)
-    {
-        CloseHandle(vetorDeThread[i]);
-    }
-    
-    clock_t end = clock();
-    double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
-    printf("Tempo de execucao: %f", time_spent);
+    printf("Fim\n");
+    // clock_t end = clock();
+    // double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+    // printf("Tempo de execucao: %f\n", time_spent);
     // 1 teste com todos os treinos
     // getchar: somente para pausar o console.
     getchar();
