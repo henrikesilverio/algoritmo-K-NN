@@ -1,5 +1,7 @@
 !bases/
 bases/*
+!.vscode
+.vscode/*
 
 ### C ###
 # Prerequisites

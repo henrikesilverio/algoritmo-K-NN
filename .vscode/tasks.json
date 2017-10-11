@@ -7,9 +7,11 @@
         "type": "shell",
         "command": "gcc",
         "args": [
+            "trabalho-linux.c",
+            "-pthread",
+            "-lm",
             "-o",
-            "trabalho",
-            "trabalho.c"
+            "trabalho"
         ],
         "group": {
             "kind": "build",
