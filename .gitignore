@@ -2,6 +2,8 @@
 bases/*
 !.vscode
 .vscode/*
+!.dist
+.dist/*
 
 ### C ###
 # Prerequisites
