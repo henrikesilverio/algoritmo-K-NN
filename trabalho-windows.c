@@ -7,13 +7,8 @@
 #include <windows.h>
 #include <time.h>
 
-typedef struct
-{
-    float **data;
-} Matriz;
-
-Matriz matrizTeste;
-Matriz matrizTreino;
+float **matrizTeste;
+float **matrizTreino;
 int algoritmo = 0;
 int numeroDeColunas = 0;
 int numeroDeLinhasDeTreino = 0;
@@ -48,14 +43,14 @@ int ExtrairValorInteiro(char *nomeDoArquivo)
     return atoi(numero);
 }
 
-void PreencherColunas(char *linhaDoArquivo, int indiceDaLinhaCorrente, Matriz *matriz)
+void PreencherColunas(char *linhaDoArquivo, int indiceDaLinhaCorrente, float **matriz)
 {
     char *celula;
     int coluna = 0;
     celula = strtok(linhaDoArquivo, ",");
     while (celula != NULL && coluna != numeroDeColunas)
     {
-        matriz->data[indiceDaLinhaCorrente][coluna] = atof(celula);
+        matriz[indiceDaLinhaCorrente][coluna] = atof(celula);
         celula = strtok(NULL, ",");
         coluna++;
     }
@@ -89,7 +84,7 @@ DWORD WINAPI FuncaoThreadDistanciaManhattan(void *data)
     float resultado = 0;
     for (i = id; i < numeroDeLinhasDeTreino; i += numeroDeThreads)
     {
-        resultado = DistanciaManhattan(matrizTreino.data[i], matrizTeste.data[indiceMatrizTeste]);
+        resultado = DistanciaManhattan(matrizTreino[i], matrizTeste[indiceMatrizTeste]);
         if (resultado < menoresResultados[id])
         {
             menoresResultados[id] = resultado;
@@ -104,7 +99,7 @@ DWORD WINAPI FuncaoThreadDistanciaEuclidiana(void *data)
     float resultado = 0;
     for (i = id; i < numeroDeLinhasDeTreino; i += numeroDeThreads)
     {
-        resultado = DistanciaEuclidiana(matrizTreino.data[i], matrizTeste.data[indiceMatrizTeste]);
+        resultado = DistanciaEuclidiana(matrizTreino[i], matrizTeste[indiceMatrizTeste]);
         if (resultado < menoresResultados[id])
         {
             menoresResultados[id] = resultado;
@@ -115,7 +110,7 @@ DWORD WINAPI FuncaoThreadDistanciaEuclidiana(void *data)
 
 int main(int argc, char **argv)
 {
-    //clock_t begin = clock();
+    clock_t begin = clock();
 
     int opcao;
     extern char *optarg;
@@ -126,8 +121,8 @@ int main(int argc, char **argv)
     size_t tamanho = 0;
     ssize_t leitura;
 
-    matrizTeste.data = (float **)malloc(3000 * sizeof(float *));
-    matrizTreino.data = (float **)malloc(10000 * sizeof(float *));
+    matrizTeste = (float **)malloc(3000 * sizeof(float *));
+    matrizTreino = (float **)malloc(10000 * sizeof(float *));
 
     while ((opcao = getopt(argc, argv, "ht:n:p:a:")) != -1)
     {
@@ -153,8 +148,8 @@ int main(int argc, char **argv)
                 arquivoTeste = AbrirArquivo(arquivoTeste, optarg);
                 while ((leitura = getline(&linha, &tamanho, arquivoTeste)) != -1)
                 {
-                    matrizTeste.data[numeroDeLinhasDeTeste] = (float *)malloc(numeroDeColunas * sizeof(float));
-                    PreencherColunas(linha, numeroDeLinhasDeTeste, &matrizTeste);
+                    matrizTeste[numeroDeLinhasDeTeste] = (float *)malloc(numeroDeColunas * sizeof(float));
+                    PreencherColunas(linha, numeroDeLinhasDeTeste, matrizTeste);
                     numeroDeLinhasDeTeste++;
                 }
                 fclose(arquivoTeste);
@@ -167,8 +162,8 @@ int main(int argc, char **argv)
                 arquivoTreino = AbrirArquivo(arquivoTreino, optarg);
                 while ((leitura = getline(&linha, &tamanho, arquivoTreino)) != -1)
                 {
-                    matrizTreino.data[numeroDeLinhasDeTreino] = (float *)malloc(numeroDeColunas * sizeof(float));
-                    PreencherColunas(linha, numeroDeLinhasDeTreino, &matrizTreino);
+                    matrizTreino[numeroDeLinhasDeTreino] = (float *)malloc(numeroDeColunas * sizeof(float));
+                    PreencherColunas(linha, numeroDeLinhasDeTreino, matrizTreino);
                     numeroDeLinhasDeTreino++;
                 }
                 fclose(arquivoTreino);
@@ -214,9 +209,9 @@ int main(int argc, char **argv)
     }
 
     printf("Fim\n");
-    // clock_t end = clock();
-    // double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
-    // printf("Tempo de execucao: %f\n", time_spent);
+    clock_t end = clock();
+    double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+    printf("Tempo de execucao: %f\n", time_spent);
     // 1 teste com todos os treinos
     // getchar: somente para pausar o console.
     getchar();
