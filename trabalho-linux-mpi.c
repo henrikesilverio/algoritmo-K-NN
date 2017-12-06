@@ -64,32 +64,53 @@ int PreencherMatriz(int numeroDeColunas, char *caminho, float **matriz)
     return numeroDeLinhasDeTeste;
 }
 
+float Abs(float valor)
+{
+    if (valor < 0)
+    {
+        return valor * -1;
+    }
+    else
+    {
+        return valor;
+    }
+}
+
 float DistanciaManhattan(float *treino, float *teste, int numeroDeColunas)
 {
     float somatoria = 0;
     int i;
     for (i = 0; i < numeroDeColunas; i++)
     {
-        somatoria += abs((treino[i] - teste[i]));
+        somatoria += Abs((treino[i] - teste[i]));
     }
     return somatoria;
 }
 
+float Calcula(float **matriz, float *linha, int numeroDeColunas, int inicio, int fim, int passo)
+{
+    float resultado = 0, retorno = 0;
+    int i;
+    for (i = inicio; i < fim; i += passo)
+    {
+        retorno = DistanciaManhattan(matriz[i], linha, numeroDeColunas);
+        if (resultado < retorno)
+        {
+            resultado = retorno;
+        }
+    }
+    return resultado;
+}
+
 int main(int argc, char **argv)
 {
-    int i, j, numeroDoProcesso, numeroDeProcessos;
+    int i, numeroDoProcesso, numeroDeProcessos;
     int numeroDeLinhasDeTreino = 0;
     int numeroDeLinhasDeTeste = 0;
     int indiceCorrente = 0;
-    int tagIndice = 1, tagMax = 2, tagLinha = 3;
+    int tagIndice = 1, tagMax = 2, tagLinha = 3, tagResultado = 4;
     int numeroDeColunas = ExtrairValorInteiro(argv[1]);
-
-    matrizTreino = (float **)malloc(10000 * sizeof(float *));
-
-    FILE *arquivoTreino;
-    char *linha = NULL;
-    size_t tamanho = 0;
-    ssize_t leitura;
+    float maiorValor = 0;
 
     MPI_Status status;
     MPI_Init(&argc, &argv);
@@ -113,22 +134,50 @@ int main(int argc, char **argv)
                 MPI_Send(matrizTeste[indiceCorrente], numeroDeColunas, MPI_FLOAT, i, tagLinha, MPI_COMM_WORLD);
             }
 
+            if (matrizTreino == NULL)
+            {
+                matrizTreino = (float **)malloc(10000 * sizeof(float *));
+                numeroDeLinhasDeTreino = PreencherMatriz(numeroDeColunas, argv[2], matrizTreino);
+            }
+            maiorValor = Calcula(matrizTreino, matrizTeste[indiceCorrente], numeroDeColunas, numeroDoProcesso, numeroDeLinhasDeTreino, numeroDeProcessos);
+
+            for (i = 1; i < numeroDeProcessos; i++) 
+            {
+                float resultado = 0;
+                MPI_Recv(&resultado, 1, MPI_FLOAT, i, tagResultado, MPI_COMM_WORLD, &status);
+                if (resultado > maiorValor) 
+                {
+                    maiorValor = resultado;
+                }
+            }
+
             indiceCorrente++;
             if (indiceCorrente == numeroDeLinhasDeTeste)
             {
+                free(matrizTeste);
+                free(matrizTreino);
                 break;
             }
         }
         else
         {
             int indice, max;
+            float resultado = 0;
             MPI_Recv(&indice, 1, MPI_INT, 0, tagIndice, MPI_COMM_WORLD, &status);
             MPI_Recv(&max, 1, MPI_INT, 0, tagMax, MPI_COMM_WORLD, &status);
             float linha[numeroDeColunas];
             MPI_Recv(linha, numeroDeColunas, MPI_FLOAT, 0, tagLinha, MPI_COMM_WORLD, &status);
-            printf("Linha %f processo %d\n", linha[0], numeroDoProcesso);
+            if (matrizTreino == NULL)
+            {
+                matrizTreino = (float **)malloc(10000 * sizeof(float *));
+                numeroDeLinhasDeTreino = PreencherMatriz(numeroDeColunas, argv[2], matrizTreino);
+            }
+            resultado = Calcula(matrizTreino, linha, numeroDeColunas, numeroDoProcesso, numeroDeLinhasDeTreino, numeroDeProcessos);
+            MPI_Send(&resultado, 1, MPI_FLOAT, 0, tagResultado, MPI_COMM_WORLD);
+
             if ((indice + 1) == max)
             {
+                free(matrizTreino);
                 break;
             }
         }
